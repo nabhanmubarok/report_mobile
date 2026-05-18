@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "LaporKita",
+    "slug": "laporkita-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "laporkita",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#EFE5C8"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.laporkita.mobile",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Untuk upload foto bukti laporan",
+        "NSCameraUsageDescription": "Untuk mengambil foto bukti laporan"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#EFE5C8"
+      },
+      "package": "com.laporkita.mobile",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Untuk upload foto bukti laporan",
+          "cameraPermission": "Untuk mengambil foto bukti laporan"
+        }
+      ]
+    ]
+  }
+}
