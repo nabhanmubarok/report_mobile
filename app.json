@@ -24,9 +24,10 @@
       },
       "package": "com.laporkita.mobile",
       "permissions": [
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "CAMERA"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -39,6 +40,12 @@
           "cameraPermission": "Untuk mengambil foto bukti laporan"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0df1ef49-06e9-4a97-a02d-3675a5696416"
+      }
+    }
   }
 }

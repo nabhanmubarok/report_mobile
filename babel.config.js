@@ -1,11 +1,11 @@
-module.exports = function (api) {
+module.exports = function(api) {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Hapus atau jangan gunakan 'react-native-reanimated/plugin' lagi
-      'react-native-worklets/plugin',
-      // Plugin lain yang mungkin kamu punya...
-    ],
+      // HAPUS baris ini jika ada:
+      // 'react-native-worklets/plugin',
+      'react-native-reanimated/plugin' // Ini saja yang diperlukan
+    ]
   };
 };
