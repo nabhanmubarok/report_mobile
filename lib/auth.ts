@@ -28,8 +28,8 @@ export const isAdmin = (user: User | null) =>
 
 export const getImageUrl = (filename: string | null) => {
   if (!filename) return null;
-  const base = "https://backendreport-production-cd31.up.railway.app"; // Ganti IP
-  return `${base}/uploads/${filename}`;
+  if (filename.startsWith("http")) return filename;
+  return `https://backendreport-production-cd31.up.railway.app/uploads/${filename}`;
 };
 
 export const formatDate = (dateStr: string) =>
