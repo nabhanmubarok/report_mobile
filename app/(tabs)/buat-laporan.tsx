@@ -22,11 +22,20 @@ export default function BuatLaporanScreen() {
   const [selectedCat, setSelectedCat] = useState<any>(null);
 
   useEffect(() => {
-    getUser().then((u) => {
-      if (!u) { Alert.alert("Perhatian", "Silakan login terlebih dahulu"); router.replace("/(auth)/login"); }
-    });
-    reportApi.getCategories().then((r) => setCategories(r.data.data));
-  }, []);
+  getUser().then((u) => {
+    if (!u) {
+      Alert.alert("Perhatian", "Silakan login terlebih dahulu");
+      router.replace("/(auth)/login");
+      return;
+    }
+    if (u.role === "admin" || u.role === "super_admin") {
+      Alert.alert("Akses Ditolak", "Admin tidak dapat mengajukan laporan");
+      router.replace("/(tabs)/dashboard");
+      return;
+    }
+  });
+  reportApi.getCategories().then((r) => setCategories(r.data.data));
+}, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
