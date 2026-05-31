@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, TextInput, ScrollView,
@@ -21,14 +21,11 @@ const STATUS_FILTERS = [
 export default function DashboardScreen() {
   const [user, setUser] = useState<any>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [reports, setReports] = useState<any[]>([]);
+  const [allReports, setAllReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     getUser().then((u) => {
@@ -41,36 +38,37 @@ export default function DashboardScreen() {
     });
   }, []);
 
-  const loadReports = useCallback(async (reset = false) => {
-    const p = reset ? 1 : page;
+  const loadReports = async () => {
     try {
-      const res = await reportApi.getAll({
-        ...(statusFilter ? { status: statusFilter } : {}),
-        page: p, limit: 10,
-      });
-      const data = res.data.data;
-      setReports(reset ? data : (prev) => [...prev, ...data]);
-      setHasMore(data.length === 10);
-      setTotal(res.data.pagination?.total || 0);
-      if (reset) setPage(1);
+      const res = await reportApi.getAll({ limit: 100, page: 1 });
+      setAllReports(res.data.data);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [statusFilter, page]);
+  };
 
-  useEffect(() => { setLoading(true); loadReports(true); }, [statusFilter]);
+  useEffect(() => { loadReports(); }, []);
 
-  const filtered = search
-    ? reports.filter(r =>
-        r.header.toLowerCase().includes(search.toLowerCase()) ||
-        r.body.toLowerCase().includes(search.toLowerCase()))
-    : reports;
+  // Filter di client side
+  const filtered = allReports.filter(r => {
+    const matchStatus = statusFilter ? r.status === statusFilter : true;
+    const matchSearch = search
+      ? r.header.toLowerCase().includes(search.toLowerCase()) ||
+        r.body.toLowerCase().includes(search.toLowerCase())
+      : true;
+    return matchStatus && matchSearch;
+  });
+
+  const total = allReports.length;
+  const pending = allReports.filter(r => r.status === "pending").length;
+  const approved = allReports.filter(r => r.status === "approved").length;
 
   if (loading) return <LoadingScreen />;
 
   return (
     <View style={s.container}>
+      {/* Header */}
       <View style={s.header}>
         <View style={{ flex: 1 }}>
           <Text style={s.greeting}>Halo, {user?.username || "Warga"} 👋</Text>
@@ -85,11 +83,12 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Stats */}
       <View style={s.statsRow}>
         {[
           { num: total, label: "Total", color: Colors.white },
-          { num: reports.filter(r => r.status === "pending").length, label: "Menunggu", color: "#FDE68A" },
-          { num: reports.filter(r => r.status === "approved").length, label: "Disetujui", color: Colors.sageLight },
+          { num: pending, label: "Menunggu", color: "#FDE68A" },
+          { num: approved, label: "Disetujui", color: Colors.sageLight },
         ].map((item) => (
           <View key={item.label} style={s.statItem}>
             <Text style={[s.statNum, { color: item.color }]}>{item.num}</Text>
@@ -98,43 +97,67 @@ export default function DashboardScreen() {
         ))}
       </View>
 
+      {/* Search */}
       <View style={s.searchWrap}>
         <Ionicons name="search-outline" size={18} color={Colors.stone400} style={{ marginRight: 8 }} />
-        <TextInput style={s.searchInput} placeholder="Cari laporan..."
-          placeholderTextColor={Colors.stone400} value={search} onChangeText={setSearch} />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Cari laporan..."
+          placeholderTextColor={Colors.stone400}
+          value={search}
+          onChangeText={setSearch}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch("")}>
+            <Ionicons name="close-circle" size={18} color={Colors.stone400} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        style={{ marginTop: 10, maxHeight: 44 }}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: "center" }}>
+      {/* Filter chips */}
+      <View style={s.filterRow}>
         {STATUS_FILTERS.map((f) => (
-          <TouchableOpacity key={f.value} onPress={() => setStatusFilter(f.value)}
-            style={[s.chip, statusFilter === f.value && s.chipActive]}>
-            <Text style={[s.chipText, statusFilter === f.value && s.chipTextActive]}>{f.label}</Text>
+          <TouchableOpacity
+            key={f.value}
+            onPress={() => setStatusFilter(f.value)}
+            style={[s.chip, statusFilter === f.value && s.chipActive]}
+          >
+            <Text style={[s.chipText, statusFilter === f.value && s.chipTextActive]}>
+              {f.label}
+            </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
+      {/* List */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ padding: 16, gap: 12 }}
-        refreshControl={<RefreshControl refreshing={refreshing}
-          onRefresh={() => { setRefreshing(true); loadReports(true); }} tintColor={Colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); loadReports(); }}
+            tintColor={Colors.primary}
+          />
+        }
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
             <Ionicons name="document-text-outline" size={48} color={Colors.stone300} />
             <Text style={{ color: Colors.stone400, fontSize: 15 }}>Tidak ada laporan</Text>
           </View>
         }
-        onEndReached={() => { if (hasMore) { setPage(p => p + 1); loadReports(); } }}
-        onEndReachedThreshold={0.4}
         renderItem={({ item }) => {
           const imgUrl = getImageUrl(item.image);
           return (
-            <TouchableOpacity onPress={() => router.push(`/laporan/${item.id}` as any)} activeOpacity={0.85}>
+            <TouchableOpacity
+              onPress={() => router.push(`/laporan/${item.id}` as any)}
+              activeOpacity={0.85}
+            >
               <Card style={{ padding: 0, overflow: "hidden" }}>
-                {imgUrl && <Image source={{ uri: imgUrl }} style={s.reportImg} contentFit="cover" />}
+                {imgUrl && (
+                  <Image source={{ uri: imgUrl }} style={s.reportImg} contentFit="cover" />
+                )}
                 <View style={{ padding: 14 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
                     <Text style={s.cardTitle} numberOfLines={2}>{item.header}</Text>
@@ -194,9 +217,10 @@ const s = StyleSheet.create({
   statLabel: { fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 },
   searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.stone200, paddingHorizontal: 12 },
   searchInput: { flex: 1, paddingVertical: 11, fontSize: 14, color: Colors.stone800 },
-  chip: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.stone100, borderWidth: 1.5, borderColor: Colors.stone200 },
+  filterRow: { flexDirection: "row", paddingHorizontal: 16, marginTop: 10, gap: 8 },
+  chip: { flex: 1, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.stone100, borderWidth: 1.5, borderColor: Colors.stone200, alignItems: "center" },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: "600", color: Colors.stone600 },
+  chipText: { fontSize: 12, fontWeight: "600", color: Colors.stone600 },
   chipTextActive: { color: Colors.white },
   reportImg: { width: "100%", height: 160 },
   cardTitle: { flex: 1, fontSize: 15, fontWeight: "700", color: Colors.stone800 },
