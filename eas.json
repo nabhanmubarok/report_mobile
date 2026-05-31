@@ -17,7 +17,6 @@
     "production": {
       "autoIncrement": true,
       "developmentClient": false,
-      "channel": "production",
       "distribution": "internal"
     }
   },
